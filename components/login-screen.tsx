@@ -3,19 +3,20 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
+import { useUser } from "../context/user-context"
 
-interface LoginScreenProps {
-  onLogin: () => void
-}
-
-export default function LoginScreen({ onLogin }: LoginScreenProps) {
-  const [isLoading, setIsLoading] = useState(false)
+export default function LoginScreen() {
+  const { login, isLoading } = useUser()
+  const [loginError, setLoginError] = useState<string | null>(null)
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true)
-    // Simulate auth delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    onLogin()
+    try {
+      setLoginError(null)
+      await login()
+    } catch (error) {
+      console.error("Login error:", error)
+      setLoginError("Failed to sign in with Google. Please try again.")
+    }
   }
 
   return (
@@ -95,6 +96,8 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
               </Button>
             </div>
 
+            {loginError && <div className="mt-4 text-red-400 text-sm text-center">{loginError}</div>}
+
             <div className="mt-8 text-center text-xs text-zinc-400">
               By continuing, you agree to CleaNote's
               <br />
@@ -110,6 +113,8 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
           className="mt-8 text-purple-300/50 text-sm text-center"
         >
           The simplest way to capture your thoughts.
+          <br />
+          <span className="text-xs mt-2 block text-purple-300/30">Your notes are saved to Google Drive</span>
         </motion.div>
       </div>
     </div>

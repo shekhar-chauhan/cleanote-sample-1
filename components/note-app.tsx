@@ -1,40 +1,34 @@
 "use client"
 
+import { useState } from "react"
+
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
-import { Save, Trash2, Menu, X, User, LogOut } from "lucide-react"
+import { useRef, useEffect } from "react"
+import { Save, Trash2, Menu, X, User, LogOut, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { motion, AnimatePresence } from "framer-motion"
+import { useUser } from "../context/user-context"
+import { useDrive } from "../context/drive-context"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-interface Note {
-  id: string
-  content: string
-}
-
-interface NoteAppProps {
-  onLogout: () => void
-}
-
-export default function NoteApp({ onLogout }: NoteAppProps) {
-  const [notes, setNotes] = useState<Note[]>(() => {
-    if (typeof window !== "undefined") {
-      const savedNotes = localStorage.getItem("notes")
-      return savedNotes ? JSON.parse(savedNotes) : [{ id: "note-1", content: "" }]
-    }
-    return [{ id: "note-1", content: "" }]
-  })
-
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedTab = localStorage.getItem("activeTab")
-      return savedTab || "note-1"
-    }
-    return "note-1"
-  })
+export default function NoteApp() {
+  const { user, logout } = useUser()
+  const {
+    notes,
+    activeTab,
+    isLoading,
+    isSyncing,
+    syncError,
+    setActiveTab,
+    addNote,
+    updateNote,
+    deleteNote,
+    saveNoteToFile,
+  } = useDrive()
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -46,68 +40,13 @@ export default function NoteApp({ onLogout }: NoteAppProps) {
     }
   }, [activeTab])
 
-  // Save notes to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("notes", JSON.stringify(notes))
-  }, [notes])
-
-  // Save activeTab to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("activeTab", activeTab)
-  }, [activeTab])
-
   const handleContentChange = (content: string) => {
-    setNotes(notes.map((note) => (note.id === activeTab ? { ...note, content } : note)))
-  }
-
-  const addNewTab = () => {
-    const newId = `note-${Date.now()}`
-    setNotes([...notes, { id: newId, content: "" }])
-    setActiveTab(newId)
+    updateNote(activeTab, content)
   }
 
   const closeTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-
-    if (notes.length === 1) {
-      // Don't close the last tab, just clear it
-      setNotes([{ id: notes[0].id, content: "" }])
-      return
-    }
-
-    const newNotes = notes.filter((note) => note.id !== id)
-    setNotes(newNotes)
-
-    // If we're closing the active tab, switch to another tab
-    if (activeTab === id) {
-      setActiveTab(newNotes[0].id)
-    }
-  }
-
-  const deleteNote = () => {
-    if (notes.length === 1) {
-      // If it's the last note, just clear it
-      setNotes([{ id: notes[0].id, content: "" }])
-    } else {
-      const newNotes = notes.filter((note) => note.id !== activeTab)
-      setNotes(newNotes)
-      setActiveTab(newNotes[0].id)
-    }
-  }
-
-  const saveNote = () => {
-    const activeNote = notes.find((note) => note.id === activeTab)
-    if (!activeNote || !activeNote.content.trim()) return
-
-    const blob = new Blob([activeNote.content], { type: "text/plain" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${getTabTitle(activeNote.content)}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    deleteNote(id)
   }
 
   const getTabTitle = (content: string) => {
@@ -139,6 +78,17 @@ export default function NoteApp({ onLogout }: NoteAppProps) {
         }
       }, 0)
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-amber-50">
+        <div className="flex flex-col items-center gap-2">
+          <div className="text-purple-600 text-2xl font-bold animate-pulse">CN</div>
+          <p className="text-sm text-gray-500">Loading your notes...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -195,7 +145,7 @@ export default function NoteApp({ onLogout }: NoteAppProps) {
                         variant="outline"
                         className="w-full mt-4"
                         onClick={() => {
-                          addNewTab()
+                          addNote()
                           setSidebarOpen(false)
                         }}
                       >
@@ -218,26 +168,39 @@ export default function NoteApp({ onLogout }: NoteAppProps) {
                     </button>
                   </TabsTrigger>
                 ))}
-                <Button variant="ghost" size="sm" onClick={addNewTab} className="h-8 px-2 ml-1 bg-amber-50">
+                <Button variant="ghost" size="sm" onClick={addNote} className="h-8 px-2 ml-1 bg-amber-50">
                   +
                 </Button>
               </TabsList>
             </div>
             <div className="flex items-center">
-              <Button variant="ghost" size="icon" onClick={deleteNote} className="mr-2">
-                <Trash2 className="h-5 w-5" />
-                <span className="sr-only">Delete note</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={saveNote}
-                disabled={!activeNoteContent.trim()}
-                className="mr-2"
-              >
-                <Save className="h-5 w-5" />
-                <span className="sr-only">Save note</span>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={() => deleteNote(activeTab)} className="mr-2">
+                      <Trash2 className="h-5 w-5" />
+                      <span className="sr-only">Delete note</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Delete note</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => saveNoteToFile(activeTab)}
+                      disabled={!activeNoteContent.trim() || isSyncing}
+                      className="mr-2"
+                    >
+                      {isSyncing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                      <span className="sr-only">Save note</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{user ? "Save to Google Drive" : "Download as .txt"}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* CleaNote Logo */}
               <div className="mr-2 px-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-400 font-bold text-lg">
@@ -248,12 +211,22 @@ export default function NoteApp({ onLogout }: NoteAppProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
-                    <User className="h-5 w-5" />
+                    {user?.picture ? (
+                      <img src={user.picture || "/placeholder.svg"} alt={user.name} className="h-8 w-8 rounded-full" />
+                    ) : (
+                      <User className="h-5 w-5" />
+                    )}
                     <span className="sr-only">User menu</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={onLogout} className="cursor-pointer">
+                  {user && (
+                    <div className="px-2 py-1.5 text-sm">
+                      <div className="font-medium">{user.name}</div>
+                      <div className="text-xs text-muted-foreground">{user.email}</div>
+                    </div>
+                  )}
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -264,6 +237,7 @@ export default function NoteApp({ onLogout }: NoteAppProps) {
         </header>
 
         <main className="flex-1 overflow-hidden">
+          {syncError && <div className="bg-red-100 text-red-800 text-sm p-2 text-center">{syncError}</div>}
           {notes.map((note) => (
             <TabsContent key={note.id} value={note.id} className="h-full p-0 m-0">
               <div className="relative h-full bg-amber-50">
