@@ -5,6 +5,37 @@ import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { useUser } from "../context/user-context"
 
+// Writing animation component
+const WritingAnimation = () => {
+  return (
+    <div className="absolute inset-0 overflow-hidden opacity-10 pointer-events-none">
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          className="absolute bg-purple-300 h-[1px]"
+          style={{
+            top: `${Math.random() * 100}%`,
+            left: 0,
+            width: 0,
+          }}
+          animate={{
+            width: ["0%", "70%", "100%"],
+            left: ["0%", "5%", "0%"],
+            opacity: [0.3, 0.8, 0.2],
+          }}
+          transition={{
+            duration: Math.random() * 3 + 2,
+            ease: "easeInOut",
+            repeat: Number.POSITIVE_INFINITY,
+            repeatType: "loop",
+            delay: Math.random() * 5,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export default function LoginScreen() {
   const { login, isLoading } = useUser()
   const [loginError, setLoginError] = useState<string | null>(null)
@@ -20,8 +51,14 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-black p-4">
-      <div className="w-full max-w-md mx-auto flex flex-col items-center">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-black p-4 relative">
+      {/* Background writing animation */}
+      <WritingAnimation />
+
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-radial from-purple-900/10 to-transparent opacity-30" />
+
+      <div className="w-full max-w-md mx-auto flex flex-col items-center relative z-10">
         {/* Logo animation */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -36,7 +73,24 @@ export default function LoginScreen() {
         >
           <div className="relative">
             <h1 className="text-6xl font-bold text-white">
-              Clea<span className="text-purple-500">Note</span>
+              Clea
+              <span className="text-purple-500 relative inline-block">
+                <span>Note</span>
+                {/* Animated border around "Note" */}
+                <motion.span
+                  className="absolute inset-0 border-2 border-purple-500/50 rounded-lg"
+                  animate={{
+                    scale: [1, 1.05, 1],
+                    opacity: [0.5, 0.8, 0.5],
+                  }}
+                  transition={{
+                    duration: 2,
+                    ease: "easeInOut",
+                    repeat: Number.POSITIVE_INFINITY,
+                    repeatType: "reverse",
+                  }}
+                />
+              </span>
             </h1>
 
             {/* Bouncing purple box animation */}
@@ -55,26 +109,87 @@ export default function LoginScreen() {
               className="absolute -inset-8 bg-purple-500/20 blur-xl rounded-full -z-10"
             />
           </div>
-          <p className="text-purple-300 text-center mt-2">Minimal. Beautiful. Focused.</p>
+
+          {/* Tagline with staggered animation */}
+          <div className="text-center mt-2 overflow-hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.5 }}>
+              <div className="flex justify-center space-x-3">
+                {["Minimal", "Beautiful", "Focused"].map((word, index) => (
+                  <motion.span
+                    key={word}
+                    className="text-purple-300 inline-block"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{
+                      delay: 0.7 + index * 0.2,
+                      duration: 0.5,
+                      ease: "easeOut",
+                    }}
+                  >
+                    {word}
+                    {index < 2 && <span className="text-purple-500">.</span>}
+                  </motion.span>
+                ))}
+              </div>
+            </motion.div>
+          </div>
         </motion.div>
 
-        {/* Login card */}
+        {/* Login card with improved animations */}
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
           className="w-full"
         >
-          <div className="bg-zinc-900/70 backdrop-blur-lg p-8 rounded-2xl shadow-xl border border-purple-500/20 relative">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 -z-10"></div>
+          <div className="backdrop-blur-lg p-8 rounded-2xl shadow-xl relative overflow-hidden">
+            {/* Animated gradient background */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-pink-900/20 -z-10"
+              animate={{
+                backgroundPosition: ["0% 0%", "100% 100%"],
+              }}
+              transition={{
+                duration: 15,
+                ease: "linear",
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+              }}
+            />
 
-            <h2 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h2>
+            {/* Subtle border glow */}
+            <motion.div
+              className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-2xl blur opacity-50 -z-10"
+              animate={{
+                opacity: [0.3, 0.5, 0.3],
+              }}
+              transition={{
+                duration: 3,
+                ease: "easeInOut",
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "reverse",
+              }}
+            />
 
-            <div className="space-y-6">
+            <motion.h2
+              className="text-2xl font-bold text-white mb-6 text-center"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+            >
+              Welcome Back
+            </motion.h2>
+
+            <motion.div
+              className="space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7, duration: 0.5 }}
+            >
               <Button
                 variant="outline"
                 size="lg"
-                className="w-full relative overflow-hidden group border-purple-500/30 hover:border-purple-500 bg-zinc-900/50 text-white hover:text-white hover:bg-zinc-800"
+                className="w-full relative overflow-hidden group border-purple-500/30 hover:border-purple-500 bg-zinc-900/30 text-white hover:text-white hover:bg-zinc-800/50"
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
               >
@@ -109,22 +224,27 @@ export default function LoginScreen() {
                   </div>
                 )}
               </Button>
-            </div>
+            </motion.div>
 
             {loginError && <div className="mt-4 text-red-400 text-sm text-center">{loginError}</div>}
 
-            <div className="mt-8 text-center text-xs text-zinc-400">
+            <motion.div
+              className="mt-8 text-center text-xs text-zinc-400"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9, duration: 0.5 }}
+            >
               By continuing, you agree to CleaNote's
               <br />
               Terms of Service and Privacy Policy
-            </div>
+            </motion.div>
           </div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
+          transition={{ delay: 1.1, duration: 0.5 }}
           className="mt-8 text-purple-300/50 text-sm text-center"
         >
           The simplest way to capture your thoughts.

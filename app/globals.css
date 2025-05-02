@@ -50,3 +50,8 @@ textarea::first-line {
   font-weight: bold;
   font-size: 1.25rem;
 }
+
+/* Custom utility classes */
+.bg-gradient-radial {
+  background-image: radial-gradient(var(--tw-gradient-stops));
+}

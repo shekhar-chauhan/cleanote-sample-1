@@ -5,7 +5,7 @@ import { useState } from "react"
 import type React from "react"
 
 import { useRef, useEffect } from "react"
-import { Save, Trash2, Menu, X, User, LogOut, RefreshCw } from "lucide-react"
+import { Save, Trash2, Menu, X, LogOut, RefreshCw, PenTool } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -14,6 +14,106 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useUser } from "../context/user-context"
 import { useDrive } from "../context/drive-context"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
+// Custom profile avatar component
+const ProfileAvatar = ({ user, onClick }) => {
+  if (user?.picture) {
+    return (
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="relative cursor-pointer"
+        onClick={onClick}
+      >
+        <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-purple-300/30">
+          <img src={user.picture || "/placeholder.svg"} alt={user.name} className="h-full w-full object-cover" />
+        </div>
+        <motion.div
+          className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 -z-10"
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 3,
+            ease: "easeInOut",
+            repeat: Number.POSITIVE_INFINITY,
+            repeatType: "reverse",
+          }}
+        />
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="relative cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+        <PenTool className="h-4 w-4" />
+      </div>
+      <motion.div
+        className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 -z-10"
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{
+          duration: 3,
+          ease: "easeInOut",
+          repeat: Number.POSITIVE_INFINITY,
+          repeatType: "reverse",
+        }}
+      />
+    </motion.div>
+  )
+}
+
+// CleaNote logo with animation
+const CleaNoteLogo = () => {
+  return (
+    <div className="relative px-2">
+      <motion.div
+        animate={{
+          y: [0, -5, 0],
+          boxShadow: [
+            "0 0 0 rgba(168, 85, 247, 0.2)",
+            "0 0 15px rgba(168, 85, 247, 0.4)",
+            "0 0 0 rgba(168, 85, 247, 0.2)",
+          ],
+        }}
+        transition={{
+          duration: 3,
+          ease: "easeInOut",
+          repeat: Number.POSITIVE_INFINITY,
+          repeatType: "loop",
+        }}
+        className="absolute -inset-4 bg-purple-500/10 rounded-full blur-md -z-10"
+      />
+      <div className="relative">
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-400 font-bold text-lg">
+          CN
+        </span>
+        <motion.span
+          className="absolute inset-0 border border-purple-500/30 rounded-md"
+          animate={{
+            scale: [1, 1.1, 1],
+            opacity: [0.3, 0.7, 0.3],
+          }}
+          transition={{
+            duration: 2,
+            ease: "easeInOut",
+            repeat: Number.POSITIVE_INFINITY,
+            repeatType: "reverse",
+          }}
+        />
+      </div>
+    </div>
+  )
+}
 
 export default function NoteApp() {
   const { user, logout } = useUser()
@@ -84,7 +184,21 @@ export default function NoteApp() {
     return (
       <div className="flex items-center justify-center h-screen bg-amber-50">
         <div className="flex flex-col items-center gap-2">
-          <div className="text-purple-600 text-2xl font-bold animate-pulse">CN</div>
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.7, 1, 0.7],
+            }}
+            transition={{
+              duration: 1.5,
+              ease: "easeInOut",
+              repeat: Number.POSITIVE_INFINITY,
+              repeatType: "reverse",
+            }}
+            className="text-purple-600 text-2xl font-bold"
+          >
+            CN
+          </motion.div>
           <p className="text-sm text-gray-500">Loading your notes...</p>
         </div>
       </div>
@@ -232,40 +346,14 @@ export default function NoteApp() {
               </TooltipProvider>
 
               {/* CleaNote Logo with bouncing animation */}
-              <div className="mr-2 px-2 relative">
-                <motion.div
-                  animate={{
-                    y: [0, -5, 0],
-                    boxShadow: [
-                      "0 0 0 rgba(168, 85, 247, 0.2)",
-                      "0 0 15px rgba(168, 85, 247, 0.4)",
-                      "0 0 0 rgba(168, 85, 247, 0.2)",
-                    ],
-                  }}
-                  transition={{
-                    duration: 3,
-                    ease: "easeInOut",
-                    repeat: Number.POSITIVE_INFINITY,
-                    repeatType: "loop",
-                  }}
-                  className="absolute -inset-4 bg-purple-500/10 rounded-full blur-md -z-10"
-                />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-400 font-bold text-lg">
-                  CN
-                </span>
-              </div>
+              <CleaNoteLogo />
 
-              {/* Profile dropdown */}
+              {/* Profile dropdown with custom avatar */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    {user?.picture ? (
-                      <img src={user.picture || "/placeholder.svg"} alt={user.name} className="h-8 w-8 rounded-full" />
-                    ) : (
-                      <User className="h-5 w-5" />
-                    )}
-                    <span className="sr-only">User menu</span>
-                  </Button>
+                  <div className="ml-1">
+                    <ProfileAvatar user={user} onClick={() => {}} />
+                  </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   {user && (
