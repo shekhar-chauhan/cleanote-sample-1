@@ -77,6 +77,44 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("activeTab", activeTab)
   }, [activeTab])
 
+  // Auto-save notes to Google Drive when they change (if logged in)
+  useEffect(() => {
+    if (!user) return
+
+    const activeNote = notes.find((note) => note.id === activeTab)
+    if (!activeNote) return
+
+    // Don't auto-save empty notes
+    if (!activeNote.content.trim()) return
+
+    // Don't save too frequently - use a debounce
+    const autoSaveTimer = setTimeout(async () => {
+      setIsSyncing(true)
+      setSyncError(null)
+
+      try {
+        const fileId = await saveNoteToDrive(activeNote)
+
+        // Update the note with the file ID
+        setNotes(
+          notes.map((n) => {
+            if (n.id === activeNote.id) {
+              return { ...n, fileId, lastSynced: Date.now() }
+            }
+            return n
+          }),
+        )
+      } catch (error) {
+        console.error("Error auto-saving to Drive:", error)
+        setSyncError("Failed to auto-save note to Google Drive")
+      } finally {
+        setIsSyncing(false)
+      }
+    }, 2000) // 2 second debounce
+
+    return () => clearTimeout(autoSaveTimer)
+  }, [notes, activeTab, user])
+
   // Find or create the CleaNote folder in Google Drive
   const findOrCreateFolder = async (accessToken: string): Promise<string> => {
     try {
@@ -234,11 +272,16 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Not authenticated")
       }
 
-      const fileName = `${note.id}.txt`
+      // Get the first line for filename
+      const firstLine = note.content.split("\n")[0].trim() || "Untitled"
+      // Sanitize filename - remove characters that are invalid in filenames
+      const sanitizedName = firstLine.replace(/[/\\?%*:|"<>]/g, "").substring(0, 100)
+      const fileName = `${sanitizedName}.txt`
       const fileContent = note.content
 
       if (note.fileId) {
         // Update existing file
+        // First update the content
         await fetch(`https://www.googleapis.com/upload/drive/v3/files/${note.fileId}?uploadType=media`, {
           method: "PATCH",
           headers: {
@@ -246,6 +289,18 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
             "Content-Type": "text/plain",
           },
           body: fileContent,
+        })
+
+        // Then update the filename if it has changed
+        await fetch(`https://www.googleapis.com/drive/v3/files/${note.fileId}`, {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: fileName,
+          }),
         })
 
         return note.fileId
@@ -387,11 +442,14 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       // Save locally
+      const firstLine = note.content.split("\n")[0].trim() || "Untitled"
+      const sanitizedName = firstLine.replace(/[/\\?%*:|"<>]/g, "").substring(0, 100)
+
       const blob = new Blob([note.content], { type: "text/plain" })
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `${note.id}.txt`
+      a.download = `${sanitizedName}.txt`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

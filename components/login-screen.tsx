@@ -38,7 +38,22 @@ export default function LoginScreen() {
             <h1 className="text-6xl font-bold text-white">
               Clea<span className="text-purple-500">Note</span>
             </h1>
-            <div className="absolute -inset-2 bg-purple-500/20 blur-xl rounded-full -z-10"></div>
+
+            {/* Bouncing purple box animation */}
+            <motion.div
+              animate={{
+                y: [0, -10, 0],
+                scale: [1, 1.05, 1],
+                opacity: [0.5, 0.8, 0.5],
+              }}
+              transition={{
+                duration: 4,
+                ease: "easeInOut",
+                repeat: Number.POSITIVE_INFINITY,
+                repeatType: "loop",
+              }}
+              className="absolute -inset-8 bg-purple-500/20 blur-xl rounded-full -z-10"
+            />
           </div>
           <p className="text-purple-300 text-center mt-2">Minimal. Beautiful. Focused.</p>
         </motion.div>

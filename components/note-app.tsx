@@ -106,7 +106,7 @@ export default function NoteApp() {
                 </SheetTrigger>
                 <SheetContent
                   side="left"
-                  className="w-[250px] bg-amber-50 p-0"
+                  className="w-[280px] bg-amber-50 p-0"
                   // Add smooth transition with framer-motion
                   motionProps={{
                     initial: { x: -100, opacity: 0 },
@@ -115,31 +115,49 @@ export default function NoteApp() {
                     transition: { type: "spring", bounce: 0.1, duration: 0.5 },
                   }}
                 >
-                  <div className="p-4 border-b">
+                  <div className="p-4 border-b flex items-center justify-between">
                     <h2 className="text-lg font-semibold">All Notes</h2>
+                    {isSyncing && (
+                      <div className="flex items-center text-xs text-gray-500">
+                        <RefreshCw className="h-3 w-3 animate-spin mr-1" />
+                        Syncing...
+                      </div>
+                    )}
                   </div>
                   <AnimatePresence>
-                    <div className="p-4">
+                    <div className="p-4 overflow-y-auto max-h-[calc(100vh-80px)]">
                       <ul className="space-y-2">
-                        {notes.map((note, index) => (
-                          <motion.li
-                            key={note.id}
-                            className="cursor-pointer hover:bg-amber-100 p-2 rounded"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                          >
-                            <button
-                              className="w-full text-left truncate"
-                              onClick={() => {
-                                setActiveTab(note.id)
-                                setSidebarOpen(false)
-                              }}
+                        {notes.map((note, index) => {
+                          const firstLine = note.content.split("\n")[0].trim() || "Untitled"
+                          const restContent = note.content.split("\n").slice(1).join("\n").trim()
+                          const previewContent =
+                            restContent.length > 50 ? restContent.substring(0, 50) + "..." : restContent
+
+                          return (
+                            <motion.li
+                              key={note.id}
+                              className={`cursor-pointer hover:bg-amber-100 p-2 rounded ${
+                                note.id === activeTab ? "bg-amber-100" : ""
+                              }`}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.05 }}
                             >
-                              {getTabTitle(note.content) || "Untitled"}
-                            </button>
-                          </motion.li>
-                        ))}
+                              <button
+                                className="w-full text-left"
+                                onClick={() => {
+                                  setActiveTab(note.id)
+                                  setSidebarOpen(false)
+                                }}
+                              >
+                                <div className="font-bold truncate">{firstLine}</div>
+                                {previewContent && (
+                                  <div className="text-xs text-gray-500 truncate mt-1">{previewContent}</div>
+                                )}
+                              </button>
+                            </motion.li>
+                          )
+                        })}
                       </ul>
                       <Button
                         variant="outline"
@@ -192,19 +210,49 @@ export default function NoteApp() {
                       size="icon"
                       onClick={() => saveNoteToFile(activeTab)}
                       disabled={!activeNoteContent.trim() || isSyncing}
-                      className="mr-2"
+                      className="mr-2 relative"
                     >
                       {isSyncing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                      {user && (
+                        <motion.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: isSyncing ? 1 : 0 }}
+                          className="absolute -bottom-1 -right-1 text-[10px] text-purple-500 bg-amber-50 rounded-full px-1"
+                        >
+                          Auto
+                        </motion.span>
+                      )}
                       <span className="sr-only">Save note</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>{user ? "Save to Google Drive" : "Download as .txt"}</TooltipContent>
+                  <TooltipContent>
+                    {user ? (isSyncing ? "Saving..." : "Save to Google Drive") : "Download as .txt"}
+                  </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
-              {/* CleaNote Logo */}
-              <div className="mr-2 px-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-400 font-bold text-lg">
-                CN
+              {/* CleaNote Logo with bouncing animation */}
+              <div className="mr-2 px-2 relative">
+                <motion.div
+                  animate={{
+                    y: [0, -5, 0],
+                    boxShadow: [
+                      "0 0 0 rgba(168, 85, 247, 0.2)",
+                      "0 0 15px rgba(168, 85, 247, 0.4)",
+                      "0 0 0 rgba(168, 85, 247, 0.2)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 3,
+                    ease: "easeInOut",
+                    repeat: Number.POSITIVE_INFINITY,
+                    repeatType: "loop",
+                  }}
+                  className="absolute -inset-4 bg-purple-500/10 rounded-full blur-md -z-10"
+                />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-purple-400 font-bold text-lg">
+                  CN
+                </span>
               </div>
 
               {/* Profile dropdown */}
