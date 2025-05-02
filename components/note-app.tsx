@@ -25,7 +25,7 @@ const ProfileAvatar = ({ user, onClick }) => {
         className="relative cursor-pointer"
         onClick={onClick}
       >
-        <div className="h-9 w-9 rounded-full overflow-hidden border-2 border-purple-300/30">
+        <div className="h-7 w-7 rounded-full overflow-hidden border-2 border-purple-300/30">
           <img src={user.picture || "/placeholder.svg"} alt={user.name} className="h-full w-full object-cover" />
         </div>
         <motion.div
@@ -52,8 +52,8 @@ const ProfileAvatar = ({ user, onClick }) => {
       className="relative cursor-pointer"
       onClick={onClick}
     >
-      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
-        <PenTool className="h-4 w-4" />
+      <div className="h-7 w-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+        <PenTool className="h-3 w-3" />
       </div>
       <motion.div
         className="absolute -inset-1 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 -z-10"
@@ -120,6 +120,7 @@ export default function NoteApp() {
   const {
     notes,
     activeTab,
+    openTabs, // Add this line
     isLoading,
     isSyncing,
     syncError,
@@ -127,11 +128,13 @@ export default function NoteApp() {
     addNote,
     updateNote,
     deleteNote,
+    closeTab, // Add this line
     saveNoteToFile,
   } = useDrive()
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [openTabsState, setOpenTabs] = useState(openTabs || [])
 
   // Focus the textarea when the component mounts or when the active tab changes
   useEffect(() => {
@@ -144,9 +147,10 @@ export default function NoteApp() {
     updateNote(activeTab, content)
   }
 
-  const closeTab = (id: string, e: React.MouseEvent) => {
+  // Replace the closeTab function with this one that uses the context's closeTab
+  const handleCloseTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    deleteNote(id)
+    closeTab(id) // Use the context's closeTab instead of deleteNote
   }
 
   const getTabTitle = (content: string) => {
@@ -208,12 +212,12 @@ export default function NoteApp() {
   return (
     <div className="flex flex-col h-screen w-full bg-amber-50">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full w-full">
-        <header className="flex justify-between items-center p-2 border-b bg-amber-50">
+        <header className="flex justify-between items-center p-2 border-b bg-amber-50/90 backdrop-blur-sm sticky top-0 z-10 shadow-sm">
           <div className="flex justify-between items-center w-full">
             <div className="flex items-center">
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="mr-2">
+                  <Button variant="ghost" size="icon" className="mr-2 text-amber-800 hover:bg-amber-100">
                     <Menu className="h-5 w-5" />
                     <span className="sr-only">Menu</span>
                   </Button>
@@ -221,7 +225,6 @@ export default function NoteApp() {
                 <SheetContent
                   side="left"
                   className="w-[280px] bg-amber-50 p-0"
-                  // Add smooth transition with framer-motion
                   motionProps={{
                     initial: { x: -100, opacity: 0 },
                     animate: { x: 0, opacity: 1 },
@@ -229,10 +232,10 @@ export default function NoteApp() {
                     transition: { type: "spring", bounce: 0.1, duration: 0.5 },
                   }}
                 >
-                  <div className="p-4 border-b flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">All Notes</h2>
+                  <div className="p-4 border-b flex items-center justify-between bg-amber-100/50">
+                    <h2 className="text-lg font-semibold text-amber-900">All Notes</h2>
                     {isSyncing && (
-                      <div className="flex items-center text-xs text-gray-500">
+                      <div className="flex items-center text-xs text-amber-700">
                         <RefreshCw className="h-3 w-3 animate-spin mr-1" />
                         Syncing...
                       </div>
@@ -250,8 +253,8 @@ export default function NoteApp() {
                           return (
                             <motion.li
                               key={note.id}
-                              className={`cursor-pointer hover:bg-amber-100 p-2 rounded ${
-                                note.id === activeTab ? "bg-amber-100" : ""
+                              className={`cursor-pointer hover:bg-amber-100 p-3 rounded-lg ${
+                                note.id === activeTab ? "bg-amber-100 shadow-sm" : ""
                               }`}
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -260,13 +263,17 @@ export default function NoteApp() {
                               <button
                                 className="w-full text-left"
                                 onClick={() => {
+                                  // If the note is not in openTabs, add it
+                                  if (!openTabs.includes(note.id)) {
+                                    setOpenTabs([...openTabs, note.id])
+                                  }
                                   setActiveTab(note.id)
                                   setSidebarOpen(false)
                                 }}
                               >
-                                <div className="font-bold truncate">{firstLine}</div>
+                                <div className="font-bold truncate text-amber-900">{firstLine}</div>
                                 {previewContent && (
-                                  <div className="text-xs text-gray-500 truncate mt-1">{previewContent}</div>
+                                  <div className="text-xs text-amber-700/70 truncate mt-1">{previewContent}</div>
                                 )}
                               </button>
                             </motion.li>
@@ -275,7 +282,7 @@ export default function NoteApp() {
                       </ul>
                       <Button
                         variant="outline"
-                        className="w-full mt-4"
+                        className="w-full mt-4 border-amber-300 text-amber-900 hover:bg-amber-100 hover:text-amber-950"
                         onClick={() => {
                           addNote()
                           setSidebarOpen(false)
@@ -287,30 +294,46 @@ export default function NoteApp() {
                   </AnimatePresence>
                 </SheetContent>
               </Sheet>
-              <TabsList className="bg-amber-50">
-                {notes.map((note) => (
-                  <TabsTrigger
-                    key={note.id}
-                    value={note.id}
-                    className="px-4 bg-amber-50 data-[state=active]:bg-amber-50 flex items-center gap-1 max-w-[150px]"
-                  >
-                    <span className="truncate">{getTabTitle(note.content) || "Untitled"}</span>
-                    <button onClick={(e) => closeTab(note.id, e)} className="ml-1 rounded-full hover:bg-amber-200 p-1">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </TabsTrigger>
-                ))}
-                <Button variant="ghost" size="sm" onClick={addNote} className="h-8 px-2 ml-1 bg-amber-50">
+              {/* Update the TabsList to only show open tabs */}
+              <TabsList className="bg-amber-50 border border-amber-200/50 rounded-lg p-0.5 h-auto">
+                {notes
+                  .filter((note) => openTabs.includes(note.id))
+                  .map((note) => (
+                    <TabsTrigger
+                      key={note.id}
+                      value={note.id}
+                      className="px-3 py-1.5 bg-amber-50 data-[state=active]:bg-amber-100 data-[state=active]:shadow-sm flex items-center gap-1 max-w-[150px] rounded-md text-amber-900 h-auto"
+                    >
+                      <span className="truncate">{getTabTitle(note.content) || "Untitled"}</span>
+                      <button
+                        onClick={(e) => handleCloseTab(note.id, e)}
+                        className="ml-1 rounded-full hover:bg-amber-200 p-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </TabsTrigger>
+                  ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={addNote}
+                  className="h-auto px-2 ml-1 bg-amber-50 hover:bg-amber-100 text-amber-900"
+                >
                   +
                 </Button>
               </TabsList>
             </div>
-            <div className="flex items-center">
+            <div className="flex items-center gap-1">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={() => deleteNote(activeTab)} className="mr-2">
-                      <Trash2 className="h-5 w-5" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteNote(activeTab)}
+                      className="text-amber-800 hover:bg-amber-100"
+                    >
+                      <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Delete note</span>
                     </Button>
                   </TooltipTrigger>
@@ -324,9 +347,9 @@ export default function NoteApp() {
                       size="icon"
                       onClick={() => saveNoteToFile(activeTab)}
                       disabled={!activeNoteContent.trim() || isSyncing}
-                      className="mr-2 relative"
+                      className="text-amber-800 hover:bg-amber-100 relative"
                     >
-                      {isSyncing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                      {isSyncing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       {user && (
                         <motion.span
                           initial={{ opacity: 0 }}
@@ -355,14 +378,14 @@ export default function NoteApp() {
                     <ProfileAvatar user={user} onClick={() => {}} />
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 bg-amber-50 border-amber-200">
                   {user && (
                     <div className="px-2 py-1.5 text-sm">
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-xs text-muted-foreground">{user.email}</div>
+                      <div className="font-medium text-amber-900">{user.name}</div>
+                      <div className="text-xs text-amber-700/70">{user.email}</div>
                     </div>
                   )}
-                  <DropdownMenuItem onClick={logout} className="cursor-pointer">
+                  <DropdownMenuItem onClick={logout} className="cursor-pointer text-amber-900 focus:bg-amber-100">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -372,23 +395,26 @@ export default function NoteApp() {
           </div>
         </header>
 
+        {/* Update the TabsContent to only render open tabs */}
         <main className="flex-1 overflow-hidden">
           {syncError && <div className="bg-red-100 text-red-800 text-sm p-2 text-center">{syncError}</div>}
-          {notes.map((note) => (
-            <TabsContent key={note.id} value={note.id} className="h-full p-0 m-0">
-              <div className="relative h-full bg-amber-50">
-                <textarea
-                  ref={note.id === activeTab ? textareaRef : null}
-                  value={note.content}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full h-full p-6 bg-transparent border-none resize-none focus:ring-0 focus:outline-none"
-                  placeholder="Start typing..."
-                  style={{ caretColor: "#000" }}
-                />
-              </div>
-            </TabsContent>
-          ))}
+          {notes
+            .filter((note) => openTabs.includes(note.id))
+            .map((note) => (
+              <TabsContent key={note.id} value={note.id} className="h-full p-0 m-0">
+                <div className="relative h-full bg-amber-50">
+                  <textarea
+                    ref={note.id === activeTab ? textareaRef : null}
+                    value={note.content}
+                    onChange={(e) => handleContentChange(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full h-full p-6 bg-transparent border-none resize-none focus:ring-0 focus:outline-none"
+                    placeholder="Start typing..."
+                    style={{ caretColor: "#000" }}
+                  />
+                </div>
+              </TabsContent>
+            ))}
         </main>
       </Tabs>
     </div>

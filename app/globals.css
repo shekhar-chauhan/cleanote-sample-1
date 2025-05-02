@@ -43,15 +43,62 @@ textarea {
 textarea {
   font-size: 1rem;
   line-height: 1.5;
+  color: #000000; /* Changed from amber-900 to black */
 }
 
 /* Custom styling for the first line */
 textarea::first-line {
   font-weight: bold;
   font-size: 1.25rem;
+  color: #000000; /* Changed from amber-950 to black */
 }
 
 /* Custom utility classes */
 .bg-gradient-radial {
   background-image: radial-gradient(var(--tw-gradient-stops));
+}
+
+/* Enhanced tab styling */
+.tabs-list {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tabs-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* Improved focus styles */
+button:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 2px solid rgba(217, 119, 6, 0.5);
+  outline-offset: 2px;
+}
+
+/* Improved tab transitions */
+[role="tab"] {
+  transition: all 0.2s ease;
+}
+
+/* Subtle hover effects */
+button:hover {
+  transition: all 0.2s ease;
+}
+
+/* Improved dropdown styling */
+.dropdown-menu-content {
+  animation: fadeIn 0.1s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

@@ -11,9 +11,11 @@ interface Note {
   lastSynced?: number
 }
 
+// Add these new properties to the DriveContextType interface
 interface DriveContextType {
   notes: Note[]
   activeTab: string
+  openTabs: string[] // Add this line to track open tabs
   isLoading: boolean
   isSyncing: boolean
   syncError: string | null
@@ -21,15 +23,18 @@ interface DriveContextType {
   addNote: () => void
   updateNote: (id: string, content: string) => void
   deleteNote: (id: string) => void
+  closeTab: (id: string) => void // Add this line for the new closeTab function
   saveNoteToFile: (id: string) => Promise<void>
 }
 
 const DriveContext = createContext<DriveContextType | undefined>(undefined)
 
+// In the DriveProvider function, add the openTabs state
 export function DriveProvider({ children }: { children: React.ReactNode }) {
   const { user, refreshAccessToken } = useUser()
   const [notes, setNotes] = useState<Note[]>([{ id: "note-1", content: "" }])
   const [activeTab, setActiveTab] = useState("note-1")
+  const [openTabs, setOpenTabs] = useState<string[]>(["note-1"]) // Add this line to track open tabs
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
@@ -48,6 +53,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
         if (savedTab) {
           setActiveTab(savedTab)
+          setOpenTabs([savedTab]) // Set open tabs
         }
 
         setIsLoading(false)
@@ -212,6 +218,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       if (!data.files || data.files.length === 0) {
         // No files found, use default note
         setNotes([{ id: "note-1", content: "" }])
+        setOpenTabs(["note-1"]) // Set open tabs
         setActiveTab("note-1")
         setIsLoading(false)
         return
@@ -240,6 +247,8 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
       if (loadedNotes.length > 0) {
         setNotes(loadedNotes)
+        // Open only the first note by default
+        setOpenTabs([loadedNotes[0].id])
         setActiveTab(loadedNotes[0].id)
       }
     } catch (error) {
@@ -256,6 +265,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
       if (savedTab) {
         setActiveTab(savedTab)
+        setOpenTabs([savedTab]) // Set open tabs
       }
     } finally {
       setIsLoading(false)
@@ -369,6 +379,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
     const newId = `note-${Date.now()}`
     const newNote = { id: newId, content: "" }
     setNotes([...notes, newNote])
+    setOpenTabs([...openTabs, newId]) // Add to open tabs
     setActiveTab(newId)
   }
 
@@ -408,6 +419,25 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
         await deleteNoteFromDrive(noteToDelete.fileId)
       } catch (error) {
         console.error("Failed to delete note from Drive:", error)
+      }
+    }
+  }
+
+  // Add this function to close a tab without deleting the note
+  const closeTab = (id: string) => {
+    // Remove the tab from openTabs
+    const newOpenTabs = openTabs.filter((tabId) => tabId !== id)
+    setOpenTabs(newOpenTabs)
+
+    // If we're closing the active tab, switch to another tab
+    if (activeTab === id && newOpenTabs.length > 0) {
+      setActiveTab(newOpenTabs[0])
+    } else if (newOpenTabs.length === 0) {
+      // If there are no open tabs left, open the first note
+      const firstNoteId = notes[0]?.id
+      if (firstNoteId) {
+        setOpenTabs([firstNoteId])
+        setActiveTab(firstNoteId)
       }
     }
   }
@@ -457,11 +487,13 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Return the updated context value with openTabs and closeTab
   return (
     <DriveContext.Provider
       value={{
         notes,
         activeTab,
+        openTabs, // Add this line
         isLoading,
         isSyncing,
         syncError,
@@ -469,6 +501,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
         addNote,
         updateNote,
         deleteNote,
+        closeTab, // Add this line
         saveNoteToFile,
       }}
     >
