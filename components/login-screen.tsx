@@ -432,7 +432,7 @@ export default function LoginScreen() {
                     }}
                   >
                     {word}
-                    {index < 2 && <span className="text-purple-500">.</span>}
+                    <span className="text-purple-500">.</span>
                   </motion.span>
                 ))}
               </div>
