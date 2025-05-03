@@ -25,6 +25,7 @@ interface DriveContextType {
   saveNoteToFile: (id: string) => Promise<void>
   closeTab: (id: string) => void
   openTab: (id: string) => void
+  resetState: () => void
 }
 
 const DriveContext = createContext<DriveContextType | undefined>(undefined)
@@ -38,6 +39,24 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncError, setSyncError] = useState<string | null>(null)
   const [folderId, setFolderId] = useState<string | null>(null)
+
+  // Reset state to default when logging in
+  const resetState = () => {
+    const defaultNoteId = `note-${Date.now()}`
+    setNotes([{ id: defaultNoteId, content: "" }])
+    setOpenTabs([defaultNoteId])
+    setActiveTab(defaultNoteId)
+  }
+
+  // Reset state when user changes (login/logout)
+  useEffect(() => {
+    if (user) {
+      // When logging in, reset to a clean state
+      resetState()
+      // Then load notes from Drive
+      loadNotesFromDrive()
+    }
+  }, [user]) // Only trigger on actual user change, not on every render
 
   // Load notes from localStorage when not logged in
   useEffect(() => {
@@ -74,13 +93,6 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     localStorage.setItem("openTabs", JSON.stringify(openTabs))
   }, [openTabs])
-
-  // Load notes from Google Drive when logged in
-  useEffect(() => {
-    if (user) {
-      loadNotesFromDrive()
-    }
-  }, [user])
 
   // Save notes to localStorage when not logged in
   useEffect(() => {
@@ -127,7 +139,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setIsSyncing(false)
       }
-    }, 2000) // 2 second debounce
+    }, 1000) // Reduced from 2000ms to 1000ms for faster saving
 
     return () => clearTimeout(autoSaveTimer)
   }, [notes, activeTab, user])
@@ -227,12 +239,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json()
 
       if (!data.files || data.files.length === 0) {
-        // No files found, use default note if no notes exist
-        if (notes.length === 0) {
-          setNotes([{ id: "note-1", content: "" }])
-          setOpenTabs(["note-1"])
-          setActiveTab("note-1")
-        }
+        // No files found, keep the default blank note
         setIsLoading(false)
         return
       }
@@ -259,44 +266,15 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       const loadedNotes = await Promise.all(notesPromises)
 
       if (loadedNotes.length > 0) {
-        // Merge loaded notes with existing notes, preferring loaded notes for duplicates
-        const mergedNotes = [...notes]
+        // Replace the default blank note with loaded notes
+        setNotes(loadedNotes)
 
-        loadedNotes.forEach((loadedNote) => {
-          const existingNoteIndex = mergedNotes.findIndex((n) => n.id === loadedNote.id)
-          if (existingNoteIndex >= 0) {
-            mergedNotes[existingNoteIndex] = loadedNote
-          } else {
-            mergedNotes.push(loadedNote)
-          }
-        })
-
-        setNotes(mergedNotes)
-
-        // If no active tab, set the first loaded note as active
-        if (!activeTab || !openTabs.length) {
-          setActiveTab(loadedNotes[0].id)
-          setOpenTabs([loadedNotes[0].id])
-        }
+        // Keep only the current blank note tab open
+        // Don't restore previous tabs
       }
     } catch (error) {
       console.error("Error loading notes from Drive:", error)
       setSyncError("Failed to load notes from Google Drive")
-
-      // Fall back to local storage only if we have no notes
-      if (notes.length === 0) {
-        const savedNotes = localStorage.getItem("notes")
-        const savedTab = localStorage.getItem("activeTab")
-
-        if (savedNotes) {
-          setNotes(JSON.parse(savedNotes))
-        }
-
-        if (savedTab) {
-          setActiveTab(savedTab)
-          setOpenTabs([savedTab])
-        }
-      }
     } finally {
       setIsLoading(false)
     }
@@ -457,13 +435,20 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    // Remove the tab from openTabs
-    const newOpenTabs = openTabs.filter((tabId) => tabId !== id)
-    setOpenTabs(newOpenTabs)
+    // Check if the note is empty and remove it if it is
+    const noteToClose = notes.find((note) => note.id === id)
+    if (noteToClose && !noteToClose.content.trim()) {
+      // Delete empty notes when closing their tab, but don't delete from Drive
+      deleteNote(id, false)
+    } else {
+      // Just remove the tab from openTabs
+      const newOpenTabs = openTabs.filter((tabId) => tabId !== id)
+      setOpenTabs(newOpenTabs)
 
-    // If we're closing the active tab, switch to another tab
-    if (activeTab === id) {
-      setActiveTab(newOpenTabs[0])
+      // If we're closing the active tab, switch to another tab
+      if (activeTab === id) {
+        setActiveTab(newOpenTabs[0])
+      }
     }
   }
 
@@ -536,6 +521,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
         saveNoteToFile,
         closeTab,
         openTab,
+        resetState,
       }}
     >
       {children}

@@ -89,6 +89,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("cleaNote_user", JSON.stringify(userData))
         localStorage.setItem("cleaNote_tokenExpiry", (Date.now() + 3600000).toString())
 
+        // Clear any previous session state
+        localStorage.removeItem("activeTab")
+        localStorage.removeItem("openTabs")
+
         setUser(userData)
       } catch (error) {
         console.error("Login error:", error)
