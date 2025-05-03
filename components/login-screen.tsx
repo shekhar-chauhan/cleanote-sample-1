@@ -30,21 +30,30 @@ const EnhancedTypingAnimation = () => {
     "goals",
     "highlights",
     "research",
+    "personal notes",
+    "work notes",
+    "shopping list",
+    "creative ideas",
+    "snippets",
+    "reflections",
+    "recipes",
+    "plans",
+    "observations",
   ]
 
   // Generate random scribbles and text typing animations
   const generateElements = () => {
     const elements = []
 
-    // Generate text typing animations - increased from 12 to 16
-    for (let i = 0; i < 16; i++) {
+    // Generate text typing animations - increased from 16 to 25
+    for (let i = 0; i < 25; i++) {
       const text = sampleTexts[Math.floor(Math.random() * sampleTexts.length)]
       const top = Math.random() * 100 // 0-100% top position
       const left = Math.random() * 70 // 0-70% left position
       const delay = Math.random() * 12 // Reduced delay time from 15s to 12s
       const duration = Math.random() * 2 + 3 // 3-5s duration
       const fontSize = Math.random() * 0.5 + 0.7 // 0.7-1.2rem font size
-      const opacity = Math.random() * 0.3 + 0.2 // Increased opacity range from 0.1-0.4 to 0.2-0.5
+      const opacity = Math.random() * 0.35 + 0.25 // Balanced opacity range
 
       elements.push({
         type: "text",
@@ -58,15 +67,15 @@ const EnhancedTypingAnimation = () => {
       })
     }
 
-    // Generate scribble animations - increased from 8 to 10
-    for (let i = 0; i < 10; i++) {
+    // Generate scribble animations - increased from 10 to 18
+    for (let i = 0; i < 18; i++) {
       const scribbleType = Math.floor(Math.random() * 5) // 5 different scribble types
       const top = Math.random() * 100 // 0-100% top position
       const left = Math.random() * 70 // 0-70% left position
       const delay = Math.random() * 12 // Reduced delay time
       const duration = Math.random() * 3 + 2 // 2-5s duration
       const scale = Math.random() * 0.5 + 0.5 // 0.5-1.0 scale
-      const opacity = Math.random() * 0.3 + 0.2 // Increased opacity
+      const opacity = Math.random() * 0.35 + 0.25 // Balanced opacity
       const rotate = Math.random() * 60 - 30 // -30 to 30 degrees rotation
 
       elements.push({
@@ -82,15 +91,15 @@ const EnhancedTypingAnimation = () => {
       })
     }
 
-    // Generate character-by-character typing - increased from 5 to 7
-    for (let i = 0; i < 7; i++) {
+    // Generate character-by-character typing - increased from 7 to 12
+    for (let i = 0; i < 12; i++) {
       const text = sampleTexts[Math.floor(Math.random() * sampleTexts.length)]
       const top = Math.random() * 100 // 0-100% top position
       const left = Math.random() * 70 // 0-70% left position
       const delay = Math.random() * 12 // Reduced delay time
       const charDelay = 0.1 // Delay between characters
       const fontSize = Math.random() * 0.4 + 0.6 // 0.6-1.0rem font size
-      const opacity = Math.random() * 0.3 + 0.2 // Increased opacity
+      const opacity = Math.random() * 0.35 + 0.25 // Balanced opacity
 
       elements.push({
         type: "typing",
@@ -139,7 +148,7 @@ const EnhancedTypingAnimation = () => {
           return (
             <motion.div
               key={`text-${i}`}
-              className="absolute text-purple-400/40 font-light tracking-wider lowercase"
+              className="absolute text-purple-400/50 font-light tracking-wider lowercase"
               style={{
                 top: `${element.top}%`,
                 left: `${element.left}%`,
@@ -190,7 +199,7 @@ const EnhancedTypingAnimation = () => {
               <svg width="100" height="60" viewBox="0 0 100 60" fill="none">
                 <motion.path
                   d={getScribblePath(element.scribbleType)}
-                  stroke="rgba(192, 132, 252, 0.4)"
+                  stroke="rgba(192, 132, 252, 0.5)"
                   strokeWidth="1"
                   fill="none"
                   initial={{ pathLength: 0 }}
@@ -222,7 +231,7 @@ const EnhancedTypingAnimation = () => {
               {element.text.split("").map((char, charIndex) => (
                 <motion.span
                   key={`char-${i}-${charIndex}`}
-                  className="inline-block text-purple-400/40"
+                  className="inline-block text-purple-400/50"
                   initial={{ opacity: 0 }}
                   animate={{
                     opacity: [0, element.opacity, element.opacity, 0],
@@ -244,42 +253,10 @@ const EnhancedTypingAnimation = () => {
         }
       })}
 
-      {/* Cursors - increased from 3 to 4 */}
-      {[...Array(4)].map((_, i) => (
-        <motion.div
-          key={`cursor-${i}`}
-          className="absolute h-4 w-0.5 bg-purple-500/50"
-          style={{
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            opacity: [0, 1, 1, 0],
-            left: [
-              `${Math.random() * 30}%`,
-              `${30 + Math.random() * 40}%`,
-              `${30 + Math.random() * 40}%`,
-              `${70 + Math.random() * 30}%`,
-            ],
-            top: [
-              `${Math.random() * 30}%`,
-              `${Math.random() * 30}%`,
-              `${30 + Math.random() * 40}%`,
-              `${30 + Math.random() * 40}%`,
-            ],
-          }}
-          transition={{
-            duration: Math.random() * 5 + 5,
-            ease: "linear",
-            repeat: Number.POSITIVE_INFINITY,
-            repeatType: "loop",
-            delay: Math.random() * 10,
-          }}
-        />
-      ))}
+      {/* Cursors removed as requested */}
 
-      {/* Handwriting scribbles - increased from 5 to 6 */}
-      {[...Array(6)].map((_, i) => {
+      {/* Handwriting scribbles - increased from 6 to 10 */}
+      {[...Array(10)].map((_, i) => {
         const handwritingPaths = [
           "M10,20 C20,10 30,30 40,20 S60,10 70,30 S90,20 100,30",
           "M10,30 Q30,10 50,30 T70,10 T90,30",
@@ -303,7 +280,7 @@ const EnhancedTypingAnimation = () => {
               opacity: 0,
             }}
             animate={{
-              opacity: [0, 0.4, 0.4, 0], // Increased from 0.3 to 0.4
+              opacity: [0, 0.45, 0.45, 0], // Balanced opacity
               left: [`${left}%`, `${left + 5}%`, `${left + 10}%`, `${left + 15}%`],
             }}
             transition={{
@@ -318,7 +295,7 @@ const EnhancedTypingAnimation = () => {
             <svg width="140" height="50" viewBox="0 0 140 50" fill="none">
               <motion.path
                 d={path}
-                stroke="rgba(192, 132, 252, 0.35)"
+                stroke="rgba(192, 132, 252, 0.45)"
                 strokeWidth="1.5"
                 fill="none"
                 initial={{ pathLength: 0 }}
@@ -380,12 +357,12 @@ export default function LoginScreen() {
               Clea
               <span className="text-purple-500 relative inline-block">
                 <span>Note</span>
-                {/* Animated border around "Note" that disappears */}
+                {/* Animated border around "Note" that disappears completely */}
                 <motion.span
                   className="absolute inset-0 border-2 border-purple-500/50 rounded-lg"
                   animate={{
                     scale: [1, 1.05, 1],
-                    opacity: [0.5, 0.8, 0, 0.5], // Added 0 opacity to make it disappear
+                    opacity: [0.5, 0.8, 0, 0.5], // Made sure it goes to 0
                   }}
                   transition={{
                     duration: 2.5,
