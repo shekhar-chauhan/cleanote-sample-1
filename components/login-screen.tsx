@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { useUser } from "../context/user-context"
+import Link from "next/link"
 
 // Enhanced typing animation with characters and scribbles
 const EnhancedTypingAnimation = () => {
@@ -575,28 +576,36 @@ export default function LoginScreen() {
 
             {loginError && <div className="mt-4 text-red-400 text-sm text-center">{loginError}</div>}
 
+            {/* Moved from bottom to here */}
             <motion.div
-              className="mt-8 text-center text-xs text-zinc-400"
+              className="mt-8 text-center text-xs text-purple-300/50"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.5 }}
             >
-              By continuing, you agree to CleaNote's
+              The simplest way to capture your thoughts.
               <br />
-              Terms of Service and Privacy Policy
+              <span className="text-xs mt-2 block text-purple-300/40">Your notes are saved to Google Drive</span>
             </motion.div>
           </div>
         </motion.div>
 
+        {/* Moved from login card to bottom */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.1, duration: 0.5 }}
-          className="mt-8 text-purple-300/50 text-sm text-center"
+          className="mt-8 text-zinc-400 text-xs text-center"
         >
-          The simplest way to capture your thoughts.
+          By continuing, you agree to CleaNote's
           <br />
-          <span className="text-xs mt-2 block text-purple-300/30">Your notes are saved to Google Drive</span>
+          <Link href="/terms" className="text-purple-400 hover:text-purple-300 transition-colors">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-purple-400 hover:text-purple-300 transition-colors">
+            Privacy Policy
+          </Link>
         </motion.div>
       </div>
     </div>
