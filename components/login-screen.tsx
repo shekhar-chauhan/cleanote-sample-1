@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { useUser } from "../context/user-context"
 import Link from "next/link"
+import { useMobile } from "@/hooks/use-mobile"
 
 // Enhanced typing animation with characters and scribbles
 const EnhancedTypingAnimation = () => {
@@ -42,12 +43,18 @@ const EnhancedTypingAnimation = () => {
     "observations",
   ]
 
+  const isMobile = useMobile()
+
   // Generate random scribbles and text typing animations
   const generateElements = () => {
     const elements = []
+    // Reduce number of elements on mobile
+    const textCount = isMobile ? 10 : 25
+    const scribbleCount = isMobile ? 7 : 18
+    const typingCount = isMobile ? 5 : 12
 
-    // Generate text typing animations - increased from 16 to 25
-    for (let i = 0; i < 25; i++) {
+    // Generate text typing animations - adjusted for mobile
+    for (let i = 0; i < textCount; i++) {
       const text = sampleTexts[Math.floor(Math.random() * sampleTexts.length)]
       const top = Math.random() * 100 // 0-100% top position
       const left = Math.random() * 70 // 0-70% left position
@@ -68,8 +75,8 @@ const EnhancedTypingAnimation = () => {
       })
     }
 
-    // Generate scribble animations - increased from 10 to 18
-    for (let i = 0; i < 18; i++) {
+    // Generate scribble animations - adjusted for mobile
+    for (let i = 0; i < scribbleCount; i++) {
       const scribbleType = Math.floor(Math.random() * 5) // 5 different scribble types
       const top = Math.random() * 100 // 0-100% top position
       const left = Math.random() * 70 // 0-70% left position
@@ -92,8 +99,8 @@ const EnhancedTypingAnimation = () => {
       })
     }
 
-    // Generate character-by-character typing - increased from 7 to 12
-    for (let i = 0; i < 12; i++) {
+    // Generate character-by-character typing - adjusted for mobile
+    for (let i = 0; i < typingCount; i++) {
       const text = sampleTexts[Math.floor(Math.random() * sampleTexts.length)]
       const top = Math.random() * 100 // 0-100% top position
       const left = Math.random() * 70 // 0-70% left position
@@ -121,7 +128,7 @@ const EnhancedTypingAnimation = () => {
 
   useEffect(() => {
     setElements(generateElements())
-  }, [])
+  }, [isMobile])
 
   // Get SVG path for different scribble types
   const getScribblePath = (type) => {
@@ -254,10 +261,8 @@ const EnhancedTypingAnimation = () => {
         }
       })}
 
-      {/* Cursors removed as requested */}
-
-      {/* Handwriting scribbles - increased from 6 to 10 */}
-      {[...Array(10)].map((_, i) => {
+      {/* Handwriting scribbles - reduced for mobile */}
+      {[...Array(useMobile() ? 5 : 10)].map((_, i) => {
         const handwritingPaths = [
           "M10,20 C20,10 30,30 40,20 S60,10 70,30 S90,20 100,30",
           "M10,30 Q30,10 50,30 T70,10 T90,30",
@@ -321,6 +326,7 @@ const EnhancedTypingAnimation = () => {
 export default function LoginScreen() {
   const { login, isLoading } = useUser()
   const [loginError, setLoginError] = useState<string | null>(null)
+  const isMobile = useMobile()
 
   const handleGoogleLogin = async () => {
     try {
@@ -354,7 +360,7 @@ export default function LoginScreen() {
           className="mb-8"
         >
           <div className="relative">
-            <h1 className="text-6xl font-bold text-white">
+            <h1 className={`${isMobile ? "text-5xl" : "text-6xl"} font-bold text-white`}>
               Clea
               <span className="text-purple-500 relative inline-block">
                 <span>Note</span>
@@ -536,7 +542,7 @@ export default function LoginScreen() {
             >
               <Button
                 variant="outline"
-                size="lg"
+                size={isMobile ? "default" : "lg"}
                 className="w-full relative overflow-hidden group border-purple-500/30 hover:border-purple-500 bg-zinc-900/30 text-white hover:text-white hover:bg-zinc-800/50"
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
