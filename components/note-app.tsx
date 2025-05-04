@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 
 import type React from "react"
 
@@ -115,6 +115,75 @@ const CleaNoteLogo = () => {
   )
 }
 
+// Create a separate NoteContent component with stable state management
+const NoteContent = ({ note, onChange, isActive }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [localContent, setLocalContent] = useState(note.content)
+  const prevNoteIdRef = useRef(note.id)
+
+  // Only update local content when the note ID changes or when not actively editing
+  useEffect(() => {
+    if (prevNoteIdRef.current !== note.id) {
+      setLocalContent(note.content)
+      prevNoteIdRef.current = note.id
+    }
+  }, [note.id, note.content])
+
+  // Focus the textarea when it becomes active
+  useEffect(() => {
+    if (isActive && textareaRef.current) {
+      textareaRef.current.focus()
+    }
+  }, [isActive])
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newContent = e.target.value
+      setLocalContent(newContent)
+      onChange(newContent)
+    },
+    [onChange],
+  )
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Tab") {
+        e.preventDefault()
+        const target = e.target as HTMLTextAreaElement
+        const start = target.selectionStart
+        const end = target.selectionEnd
+
+        // Insert tab at cursor position
+        const newContent = localContent.substring(0, start) + "    " + localContent.substring(end)
+        setLocalContent(newContent)
+        onChange(newContent)
+
+        // Move cursor after the inserted tab
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 4
+          }
+        }, 0)
+      }
+    },
+    [localContent, onChange],
+  )
+
+  return (
+    <div className="relative h-full bg-amber-50">
+      <textarea
+        ref={textareaRef}
+        value={localContent}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        className="w-full h-full p-6 bg-transparent border-none resize-none focus:ring-0 focus:outline-none"
+        placeholder="Start typing..."
+        style={{ caretColor: "#000" }}
+      />
+    </div>
+  )
+}
+
 export default function NoteApp() {
   const { user, logout } = useUser()
   const {
@@ -133,19 +202,14 @@ export default function NoteApp() {
     openTab,
   } = useDrive()
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  // Focus the textarea when the component mounts or when the active tab changes
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.focus()
-    }
-  }, [activeTab])
-
-  const handleContentChange = (content: string) => {
-    updateNote(activeTab, content)
-  }
+  const handleContentChange = useCallback(
+    (content: string) => {
+      updateNote(activeTab, content)
+    },
+    [activeTab, updateNote],
+  )
 
   const handleCloseTab = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -159,28 +223,6 @@ export default function NoteApp() {
     // Truncate based on number of tabs
     const maxLength = Math.max(10, 30 - notes.length * 2)
     return firstLine.length > maxLength ? firstLine.substring(0, maxLength) + "..." : firstLine
-  }
-
-  const activeNoteContent = notes.find((note) => note.id === activeTab)?.content || ""
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab") {
-      e.preventDefault()
-      const target = e.target as HTMLTextAreaElement
-      const start = target.selectionStart
-      const end = target.selectionEnd
-
-      // Insert tab at cursor position
-      const newContent = activeNoteContent.substring(0, start) + "    " + activeNoteContent.substring(end)
-      handleContentChange(newContent)
-
-      // Move cursor after the inserted tab
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + 4
-        }
-      }, 0)
-    }
   }
 
   if (isLoading) {
@@ -333,7 +375,7 @@ export default function NoteApp() {
                       variant="ghost"
                       size="icon"
                       onClick={() => saveNoteToFile(activeTab)}
-                      disabled={!activeNoteContent.trim() || isSyncing}
+                      disabled={!notes.find((n) => n.id === activeTab)?.content.trim() || isSyncing}
                       className="mr-2 relative"
                     >
                       {isSyncing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
@@ -386,17 +428,11 @@ export default function NoteApp() {
           {syncError && <div className="bg-red-100 text-red-800 text-sm p-2 text-center">{syncError}</div>}
           {notes.map((note) => (
             <TabsContent key={note.id} value={note.id} className="h-full p-0 m-0">
-              <div className="relative h-full bg-amber-50">
-                <textarea
-                  ref={note.id === activeTab ? textareaRef : null}
-                  value={note.content}
-                  onChange={(e) => handleContentChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full h-full p-6 bg-transparent border-none resize-none focus:ring-0 focus:outline-none"
-                  placeholder="Start typing..."
-                  style={{ caretColor: "#000" }}
-                />
-              </div>
+              <NoteContent
+                note={note}
+                onChange={(content) => handleContentChange(content)}
+                isActive={note.id === activeTab}
+              />
             </TabsContent>
           ))}
         </main>

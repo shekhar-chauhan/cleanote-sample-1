@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useRef } from "react"
 import { useUser } from "./user-context"
 
 interface Note {
@@ -9,6 +9,7 @@ interface Note {
   content: string
   fileId?: string // Google Drive file ID
   lastSynced?: number
+  isEditing?: boolean // Track if the note is currently being edited
 }
 
 interface DriveContextType {
@@ -40,12 +41,21 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
   const [syncError, setSyncError] = useState<string | null>(null)
   const [folderId, setFolderId] = useState<string | null>(null)
 
+  // Add a ref to track if notes are currently being loaded
+  const isLoadingNotesRef = useRef(false)
+  // Add a ref to track if initial load has completed
+  const initialLoadCompletedRef = useRef(false)
+  // Add a ref to store the last saved content for each note
+  const lastSavedContentRef = useRef<Map<string, string>>(new Map())
+
   // Reset state to default when logging in
   const resetState = () => {
     const defaultNoteId = `note-${Date.now()}`
     setNotes([{ id: defaultNoteId, content: "" }])
     setOpenTabs([defaultNoteId])
     setActiveTab(defaultNoteId)
+    initialLoadCompletedRef.current = false
+    lastSavedContentRef.current.clear()
   }
 
   // Reset state when user changes (login/logout)
@@ -109,12 +119,17 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
   // Auto-save notes to Google Drive when they change (if logged in)
   useEffect(() => {
     if (!user) return
+    if (isLoadingNotesRef.current) return // Skip auto-save during loading
 
     const activeNote = notes.find((note) => note.id === activeTab)
     if (!activeNote) return
 
     // Don't auto-save empty notes
     if (!activeNote.content.trim()) return
+
+    // Check if content has changed since last save
+    const lastSavedContent = lastSavedContentRef.current.get(activeNote.id)
+    if (lastSavedContent === activeNote.content) return
 
     // Don't save too frequently - use a debounce
     const autoSaveTimer = setTimeout(async () => {
@@ -123,6 +138,9 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const fileId = await saveNoteToDrive(activeNote)
+
+        // Store the last saved content
+        lastSavedContentRef.current.set(activeNote.id, activeNote.content)
 
         // Update the note with the file ID
         setNotes(
@@ -139,7 +157,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setIsSyncing(false)
       }
-    }, 1000) // Reduced from 2000ms to 1000ms for faster saving
+    }, 1500) // Increased to 1500ms to reduce save frequency
 
     return () => clearTimeout(autoSaveTimer)
   }, [notes, activeTab, user])
@@ -215,6 +233,7 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(true)
     setSyncError(null)
+    isLoadingNotesRef.current = true // Set loading flag
 
     try {
       const accessToken = await refreshAccessToken()
@@ -240,6 +259,8 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
       if (!data.files || data.files.length === 0) {
         // No files found, keep the default blank note
+        isLoadingNotesRef.current = false // Clear loading flag
+        initialLoadCompletedRef.current = true
         setIsLoading(false)
         return
       }
@@ -255,6 +276,9 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
         const content = await contentResponse.text()
         const noteId = file.name.replace(".txt", "")
 
+        // Store the content as the last saved version
+        lastSavedContentRef.current.set(noteId, content)
+
         return {
           id: noteId,
           content,
@@ -268,15 +292,14 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
       if (loadedNotes.length > 0) {
         // Replace the default blank note with loaded notes
         setNotes(loadedNotes)
-
-        // Keep only the current blank note tab open
-        // Don't restore previous tabs
       }
     } catch (error) {
       console.error("Error loading notes from Drive:", error)
       setSyncError("Failed to load notes from Google Drive")
     } finally {
       setIsLoading(false)
+      isLoadingNotesRef.current = false // Clear loading flag
+      initialLoadCompletedRef.current = true // Mark initial load as completed
     }
   }
 
@@ -393,10 +416,13 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
   // Update a note's content
   const updateNote = (id: string, content: string) => {
+    // If we're currently loading notes and initial load hasn't completed, don't update
+    if (isLoadingNotesRef.current && !initialLoadCompletedRef.current) return
+
     setNotes(
       notes.map((note) => {
         if (note.id === id) {
-          return { ...note, content }
+          return { ...note, content, isEditing: true }
         }
         return note
       }),
@@ -472,6 +498,9 @@ export function DriveProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const fileId = await saveNoteToDrive(note)
+
+        // Store the last saved content
+        lastSavedContentRef.current.set(note.id, note.content)
 
         // Update the note with the file ID
         setNotes(
